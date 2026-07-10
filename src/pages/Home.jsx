@@ -14,6 +14,7 @@ import {
 import { ArrowForward, ArrowBack, ArrowForwardIos, LocalShipping } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { productsAPI } from '../api/client';
+import EyeTestSection from '../components/EyeTest/EyeTestSection';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -360,6 +361,9 @@ const Home = () => {
                     </Box>
                 </Container>
             </Box>
+
+            {/* Sección de Test Visual */}
+            <EyeTestSection />
 
             {/* Products Sections */}
             <Container maxWidth="lg" sx={{ py: 6 }}>
