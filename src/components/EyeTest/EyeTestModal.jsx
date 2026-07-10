@@ -122,13 +122,15 @@ const EyeTestModal = ({ open, onClose }) => {
         }
     }, [open]);
 
-    // Generar letras aleatorias para las 8 filas
+    // Generar letras aleatorias únicas (sin repetición en una misma fila)
     const generateTestLetters = () => {
         const generated = LETTERS_COUNT_PER_ROW.map((count) => {
+            const available = [...SNELLEN_LETTERS];
             let row = '';
             for (let i = 0; i < count; i++) {
-                const randIndex = Math.floor(Math.random() * SNELLEN_LETTERS.length);
-                row += SNELLEN_LETTERS[randIndex];
+                const randIndex = Math.floor(Math.random() * available.length);
+                row += available[randIndex];
+                available.splice(randIndex, 1); // Remover la letra para evitar que se repita
             }
             return row;
         });
@@ -232,22 +234,22 @@ const EyeTestModal = ({ open, onClose }) => {
     const getDeviceScale = () => {
         switch (device) {
             case 'mobile': return 0.8;    // Pantalla pequeña a 1 metro
-            case 'tablet': return 0.95;   // Pantalla mediana a 1.2 metros
-            case 'tv': return 1.6;        // Pantalla grande a 2.5 metros
+            case 'tablet': return 0.95;   // Pantalla mediana a 1.5 metros
+            case 'tv': return 1.6;        // Pantalla grande a 3 metros
             case 'computer':
             default:
-                return 1.0;               // Pantalla estándar a 1.5 metros
+                return 1.0;               // Pantalla estándar a 2 metros
         }
     };
 
     const getDistanceLabel = () => {
         switch (device) {
             case 'mobile': return '1 metro (3 pies)';
-            case 'tablet': return '1.2 metros (4 pies)';
-            case 'tv': return '2.5 metros (8 pies)';
+            case 'tablet': return '1.5 metros (5 pies)';
+            case 'tv': return '3 metros (10 pies)';
             case 'computer':
             default:
-                return '1.5 metros (5 pies)';
+                return '2 metros (6.5 pies)';
         }
     };
 
