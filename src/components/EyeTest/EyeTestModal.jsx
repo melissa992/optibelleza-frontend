@@ -27,6 +27,7 @@ import {
 import {
     Warning,
     Smartphone,
+    TabletAndroid,
     Computer,
     Tv,
     Close,
@@ -44,6 +45,7 @@ import { useNavigate } from 'react-router-dom';
 const SNELLEN_LETTERS = ['C', 'D', 'E', 'F', 'L', 'O', 'P', 'T', 'Z'];
 
 // Tamaños base de las letras en rem (escala decreciente de Fila 1 a Fila 8)
+// Progresión crítica ajustada ópticamente
 const BASE_FONT_SIZES = [
     6.0,  // Fila 1 (20/200)
     4.2,  // Fila 2 (20/100)
@@ -70,13 +72,17 @@ const VISUAL_ACUITY_VALUES = [
     '20/20',
 ];
 
+// Tiempos progresivos por fila (1 letra = 12s, 2 = 15s, etc. hasta 8 = 33s)
+const ROW_TIMES = [12, 15, 18, 22, 25, 28, 30, 33];
+const TOTAL_TEST_TIME = 183; // Suma de todos los tiempos
+
 const EyeTestModal = ({ open, onClose }) => {
     const navigate = useNavigate();
 
     // Estados del flujo del test
     // step: 0 = Disclaimer, 1 = Seleccionar Dispositivo, 2 = Instrucciones, 3 = Cuenta Regresiva, 4 = Examen en Curso, 5 = Formulario de Respuestas, 6 = Resultados
     const [step, setStep] = useState(0);
-    const [device, setDevice] = useState('computer'); // 'mobile' | 'computer' | 'tv'
+    const [device, setDevice] = useState('computer'); // 'mobile' | 'tablet' | 'computer' | 'tv'
     const [muted, setMuted] = useState(false);
     
     // Cuenta regresiva de preparación (15 segundos)
@@ -84,8 +90,8 @@ const EyeTestModal = ({ open, onClose }) => {
     
     // Examen en curso
     const [currentRowIndex, setCurrentRowIndex] = useState(0);
-    const [rowCountdown, setRowCountdown] = useState(15);
-    const [testLetters, setTestLetters] = useState([]); // Array de strings (cada elemento es una fila de letras, ej: "EDFCZP")
+    const [rowCountdown, setRowCountdown] = useState(12); // Fila 1 inicia con 12s
+    const [testLetters, setTestLetters] = useState([]); // Fila de letras autogeneradas
     
     // Respuestas del usuario
     const [userInputs, setUserInputs] = useState(Array(8).fill(''));
@@ -102,7 +108,7 @@ const EyeTestModal = ({ open, onClose }) => {
             setDevice('computer');
             setPrepCountdown(15);
             setCurrentRowIndex(0);
-            setRowCountdown(15);
+            setRowCountdown(12); // Primer fila inicia con 12s
             setUserInputs(Array(8).fill(''));
             setResults(null);
             generateTestLetters();
@@ -140,7 +146,6 @@ const EyeTestModal = ({ open, onClose }) => {
         utterance.lang = 'es-ES';
         utterance.rate = 1.0;
         
-        // Intentar buscar una voz en español del sistema
         const voices = synthRef.current.getVoices();
         const spanishVoice = voices.find(v => v.lang.startsWith('es'));
         if (spanishVoice) {
@@ -153,18 +158,18 @@ const EyeTestModal = ({ open, onClose }) => {
     // Efecto que controla la cuenta regresiva de preparación (Paso 3)
     useEffect(() => {
         if (step === 3) {
-            // Dictar la instrucción al inicio del paso
-            speak("Examen listo. Aléjate a la distancia recomendada y prepara tu lápiz y papel. Comenzamos en 15 segundos.");
+            speak("Examen listo. Aléjate a la distancia recomendada y ten a la mano tu papel y lápiz, o cualquier cosa para anotar. Comenzamos en 15 segundos.");
 
             timerRef.current = setInterval(() => {
                 setPrepCountdown((prev) => {
                     if (prev <= 1) {
                         clearInterval(timerRef.current);
-                        setStep(4); // Avanzar a examen en curso
+                        setStep(4); // Avanzar a examen
+                        setCurrentRowIndex(0);
+                        setRowCountdown(12); // Fila 1 = 12s
                         return 15;
                     }
                     
-                    // Cuenta regresiva por voz en los últimos 5 segundos
                     if (prev <= 6) {
                         speak((prev - 1).toString());
                     }
@@ -181,9 +186,12 @@ const EyeTestModal = ({ open, onClose }) => {
     // Efecto que controla la ejecución de las filas en curso (Paso 4)
     useEffect(() => {
         if (step === 4) {
-            // Dictar la fila actual al iniciarla
             const speakCurrentRow = (index) => {
-                speak(`Fila ${index + 1}. Escribe en tu papel las letras que ves en pantalla.`);
+                if (index === 0) {
+                    speak("Comenzamos el examen. Fila número 1. Por favor, anota en tu papel, celular o dispositivo las letras que ves en pantalla.");
+                } else {
+                    speak(`Cambiando a la fila número ${index + 1}. Anota las letras de la fila ${index + 1}.`);
+                }
             };
 
             speakCurrentRow(currentRowIndex);
@@ -191,22 +199,29 @@ const EyeTestModal = ({ open, onClose }) => {
             timerRef.current = setInterval(() => {
                 setRowCountdown((prev) => {
                     if (prev <= 1) {
-                        // Cambiar de fila
+                        let isFinished = false;
+                        let nextRowVal = 0;
+                        
                         setCurrentRowIndex((prevRow) => {
                             const nextRow = prevRow + 1;
                             if (nextRow < 8) {
-                                speakCurrentRow(nextRow);
-                                setRowCountdown(15);
+                                nextRowVal = nextRow;
                                 return nextRow;
                             } else {
-                                // Test finalizado
-                                clearInterval(timerRef.current);
-                                speak("Examen finalizado. Por favor, regresa al dispositivo y completa el formulario con lo que anotaste en tu papel.");
-                                setStep(5); // Avanzar al formulario
-                                return 0;
+                                isFinished = true;
+                                return prevRow;
                             }
                         });
-                        return 15;
+
+                        if (isFinished) {
+                            clearInterval(timerRef.current);
+                            speak("Examen finalizado. Por favor, regresa al dispositivo e ingresa en cada casilla las respuestas que anotaste.");
+                            setStep(5); // Avanzar al formulario
+                            return 0;
+                        } else {
+                            speakCurrentRow(nextRowVal);
+                            return ROW_TIMES[nextRowVal];
+                        }
                     }
                     return prev - 1;
                 });
@@ -218,20 +233,22 @@ const EyeTestModal = ({ open, onClose }) => {
         };
     }, [step, currentRowIndex]);
 
-    // Multiplicador de escala de tamaño según dispositivo
+    // Multiplicador de escala de tamaño según dispositivo (Verificación crítica de distancias y tamaños)
     const getDeviceScale = () => {
         switch (device) {
-            case 'mobile': return 0.8;
-            case 'tv': return 1.6;
+            case 'mobile': return 0.8;    // Pantalla pequeña a 1 metro
+            case 'tablet': return 0.95;   // Pantalla mediana a 1.5 metros
+            case 'tv': return 1.6;        // Pantalla grande a 3 metros
             case 'computer':
             default:
-                return 1.0;
+                return 1.0;               // Pantalla estándar a 2 metros
         }
     };
 
     const getDistanceLabel = () => {
         switch (device) {
             case 'mobile': return '1 metro (3 pies)';
+            case 'tablet': return '1.5 metros (5 pies)';
             case 'tv': return '3 metros (10 pies)';
             case 'computer':
             default:
@@ -239,14 +256,22 @@ const EyeTestModal = ({ open, onClose }) => {
         }
     };
 
+    // Calcular el progreso acumulado proporcional del examen
+    const getTestProgress = () => {
+        let elapsed = 0;
+        for (let i = 0; i < currentRowIndex; i++) {
+            elapsed += ROW_TIMES[i];
+        }
+        elapsed += (ROW_TIMES[currentRowIndex] - rowCountdown);
+        return (elapsed * 100) / TOTAL_TEST_TIME;
+    };
+
     // Evaluar respuestas y calcular resultados
     const handleEvaluateResults = () => {
-        let correctCount = 0;
         const rowDetails = testLetters.map((realRow, index) => {
             const userInput = (userInputs[index] || '').toUpperCase().replace(/\s+/g, '');
             const target = realRow.toUpperCase();
             
-            // Contar coincidencias letra por letra en la misma posición (o evaluación flexible)
             let hits = 0;
             const minLen = Math.min(userInput.length, target.length);
             for (let i = 0; i < minLen; i++) {
@@ -255,13 +280,8 @@ const EyeTestModal = ({ open, onClose }) => {
                 }
             }
 
-            // Una fila se considera correcta si el acierto es >= 60% (ej. en fila de 5 letras, acertar al menos 3)
             const threshold = Math.ceil(target.length * 0.6);
             const isCorrect = hits >= threshold && userInput.length > 0;
-
-            if (isCorrect) {
-                correctCount++;
-            }
 
             return {
                 row: index + 1,
@@ -274,20 +294,20 @@ const EyeTestModal = ({ open, onClose }) => {
             };
         });
 
-        // La agudeza visual se calcula encontrando la última fila consecutiva respondida correctamente
+        // Agudeza visual por última fila consecutiva correcta
         let finalAcuityIndex = -1;
         for (let i = 0; i < rowDetails.length; i++) {
             if (rowDetails[i].isCorrect) {
                 finalAcuityIndex = i;
             } else {
-                break; // Parar en el primer fallo consecutivo para medir el límite real
+                break;
             }
         }
 
         let acuityValue = 'Menor a 20/200';
         let diagnosis = '';
         let recommendation = '';
-        let severity = 'error'; // 'error' | 'warning' | 'success'
+        let severity = 'error';
 
         if (finalAcuityIndex >= 0) {
             acuityValue = VISUAL_ACUITY_VALUES[finalAcuityIndex];
@@ -319,14 +339,14 @@ const EyeTestModal = ({ open, onClose }) => {
             rowDetails,
         });
 
-        setStep(6); // Ir al paso de resultados
+        setStep(6);
     };
 
     const handleReset = () => {
         setStep(1);
         setPrepCountdown(15);
         setCurrentRowIndex(0);
-        setRowCountdown(15);
+        setRowCountdown(12); // Reset a 12s para la Fila 1
         setUserInputs(Array(8).fill(''));
         setResults(null);
         generateTestLetters();
@@ -364,16 +384,17 @@ const EyeTestModal = ({ open, onClose }) => {
                             ¿En qué dispositivo realizarás el test?
                         </Typography>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 4, textAlign: 'center' }}>
-                            Adaptaremos el tamaño de las letras y la distancia recomendada según la pantalla que elijas.
+                            Adaptaremos críticamente el tamaño de las letras y la distancia recomendada según la pantalla que elijas.
                         </Typography>
                         
-                        <Grid container spacing={3}>
+                        <Grid container spacing={2}>
                             {[
-                                { id: 'mobile', label: 'Celular / Móvil', icon: <Smartphone sx={{ fontSize: 48 }} />, desc: 'Para pantallas de 5" a 6.8"' },
-                                { id: 'computer', label: 'Computadora / Laptop', icon: <Computer sx={{ fontSize: 48 }} />, desc: 'Para pantallas de 13" a 27"' },
-                                { id: 'tv', label: 'Televisor / Pantalla', icon: <Tv sx={{ fontSize: 48 }} />, desc: 'Para pantallas de 32" o más' },
+                                { id: 'mobile', label: 'Celular / Móvil', icon: <Smartphone sx={{ fontSize: 40 }} />, desc: 'Pantallas de 5" a 6.8"' },
+                                { id: 'tablet', label: 'Tablet / iPad', icon: <TabletAndroid sx={{ fontSize: 40 }} />, desc: 'Pantallas de 7" a 12.9"' },
+                                { id: 'computer', label: 'Laptop / PC', icon: <Computer sx={{ fontSize: 40 }} />, desc: 'Pantallas de 13" a 27"' },
+                                { id: 'tv', label: 'Televisor / Smart TV', icon: <Tv sx={{ fontSize: 40 }} />, desc: 'Pantallas de 32" o más' },
                             ].map((item) => (
-                                <Grid item xs={12} sm={4} key={item.id}>
+                                <Grid item xs={12} sm={3} key={item.id}>
                                     <Card 
                                         sx={{ 
                                             border: device === item.id ? '2px solid #c4a043' : '1px solid #e0e0e0',
@@ -386,11 +407,11 @@ const EyeTestModal = ({ open, onClose }) => {
                                             onClick={() => setDevice(item.id)}
                                             sx={{ height: '100%', p: 2, textAlign: 'center' }}
                                         >
-                                            <Box sx={{ color: device === item.id ? '#c4a043' : '#666', mb: 2 }}>
+                                            <Box sx={{ color: device === item.id ? '#c4a043' : '#666', mb: 1.5 }}>
                                                 {item.icon}
                                             </Box>
                                             <CardContent sx={{ p: 0 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                                                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
                                                     {item.label}
                                                 </Typography>
                                                 <Typography variant="caption" color="textSecondary">
@@ -421,13 +442,13 @@ const EyeTestModal = ({ open, onClose }) => {
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                                 <Box sx={{ bgcolor: '#c4a043', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700 }}>2</Box>
                                 <Typography variant="body1">
-                                    Sube el <strong>brillo de la pantalla al 100%</strong> para garantizar una visibilidad óptima de los optotipos.
+                                    Sube el <strong>brillo de la pantalla al 100%</strong> para garantizar una visibilidad y contraste óptimos de las letras.
                                 </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                                 <Box sx={{ bgcolor: '#c4a043', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700 }}>3</Box>
                                 <Typography variant="body1">
-                                    Ten a la mano una <strong>hoja de papel y un lápiz</strong> para anotar las letras de cada una de las 8 filas.
+                                    Ten a la mano una <strong>hoja de papel y un lápiz, o cualquier otro dispositivo o elemento para anotar</strong> las letras de cada una de las 8 filas.
                                 </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
@@ -436,16 +457,16 @@ const EyeTestModal = ({ open, onClose }) => {
                                     Cúbrete el <strong>ojo izquierdo</strong> con tu mano (sin presionarlo) para evaluar primero tu ojo derecho. Si deseas evaluar ambos ojos juntos para una medición general, puedes realizar el test con ambos ojos abiertos.
                                 </Typography>
                             </Box>
-                            {device === 'mobile' && (
+                            {(device === 'mobile' || device === 'tablet') && (
                                 <Alert severity="warning" sx={{ mt: 1, borderRadius: 2 }}>
-                                    Apoya tu celular en vertical sobre una mesa o base estable a la altura de tus ojos. No lo sostengas con la mano durante el test.
+                                    Apoya tu dispositivo en posición vertical sobre una mesa o base estable a la altura de tus ojos. No lo sostengas con la mano durante el test.
                                 </Alert>
                             )}
                         </Stack>
                     </Box>
                 );
 
-            case 3: // Cuenta regresiva para posicionarse
+            case 3: // Cuenta regresiva
                 return (
                     <Box sx={{ py: 6, textAlign: 'center' }}>
                         <Typography variant="h4" sx={{ fontWeight: 800, mb: 4 }}>
@@ -470,7 +491,7 @@ const EyeTestModal = ({ open, onClose }) => {
                             </Typography>
                         </Box>
                         <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
-                            Ajustando brillo al 100% y preparando papel y lápiz...
+                            Prepara tu papel y lápiz, o elemento para anotar...
                         </Typography>
                         <LinearProgress 
                             variant="determinate" 
@@ -484,6 +505,7 @@ const EyeTestModal = ({ open, onClose }) => {
                 const scale = getDeviceScale();
                 const fontSize = BASE_FONT_SIZES[currentRowIndex] * scale;
                 const currentLetters = testLetters[currentRowIndex] || '';
+                const maxRowTime = ROW_TIMES[currentRowIndex];
 
                 return (
                     <Box sx={{ py: 4, textAlign: 'center', bgcolor: 'white', borderRadius: 2, border: '1px solid #eee', position: 'relative' }}>
@@ -493,13 +515,13 @@ const EyeTestModal = ({ open, onClose }) => {
                                 Fila {currentRowIndex + 1} de 8 (Agudeza: {VISUAL_ACUITY_VALUES[currentRowIndex]})
                             </Typography>
                             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: rowCountdown <= 3 ? 'error.main' : 'text.primary' }}>
-                                Siguiente fila en: {rowCountdown}s
+                                Cambia en: {rowCountdown}s
                             </Typography>
                         </Box>
 
                         <LinearProgress 
                             variant="determinate" 
-                            value={(currentRowIndex * 15 + (15 - rowCountdown)) * (100 / 120)} 
+                            value={getTestProgress()} 
                             sx={{ mb: 6, height: 6, bgcolor: '#f1f1f1', '& .MuiLinearProgress-bar': { bgcolor: '#c4a043' } }}
                         />
 
@@ -511,7 +533,7 @@ const EyeTestModal = ({ open, onClose }) => {
                                 alignItems: 'center', 
                                 justifyContent: 'center', 
                                 letterSpacing: '0.8em',
-                                pl: '0.8em', // Compensar el espaciado a la derecha
+                                pl: '0.8em',
                                 userSelect: 'none',
                             }}
                         >
@@ -529,7 +551,7 @@ const EyeTestModal = ({ open, onClose }) => {
                         </Box>
 
                         <Typography variant="body2" color="textSecondary" sx={{ mt: 6, fontStyle: 'italic' }}>
-                            Escribe en tu papel las letras mostradas arriba antes de que expire el tiempo.
+                            Anota las letras en tu papel o dispositivo antes de que cambie de fila.
                         </Typography>
                     </Box>
                 );
@@ -538,10 +560,10 @@ const EyeTestModal = ({ open, onClose }) => {
                 return (
                     <Box sx={{ py: 2 }}>
                         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                            Ingresa las respuestas de tu papel
+                            Ingresa las respuestas anotadas
                         </Typography>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                            Transcribe en cada casilla las letras que lograste anotar para cada fila. Déjala vacía si no lograste verla.
+                            Transcribe en cada casilla las letras que lograste anotar en tu papel o dispositivo para cada fila. Déjala vacía si no pudiste verla.
                         </Typography>
                         
                         <Grid container spacing={2}>
@@ -651,7 +673,7 @@ const EyeTestModal = ({ open, onClose }) => {
     // Botones de control del footer del diálogo
     const renderActions = () => {
         switch (step) {
-            case 0: // Disclaimer
+            case 0:
                 return (
                     <>
                         <Button onClick={onClose} color="inherit">
@@ -667,7 +689,7 @@ const EyeTestModal = ({ open, onClose }) => {
                     </>
                 );
 
-            case 1: // Seleccionar Dispositivo
+            case 1:
                 return (
                     <>
                         <Button onClick={() => setStep(0)} color="inherit">
@@ -683,7 +705,7 @@ const EyeTestModal = ({ open, onClose }) => {
                     </>
                 );
 
-            case 2: // Instrucciones
+            case 2:
                 return (
                     <>
                         <Button onClick={() => setStep(1)} color="inherit">
@@ -699,7 +721,7 @@ const EyeTestModal = ({ open, onClose }) => {
                     </>
                 );
 
-            case 3: // Cuenta regresiva
+            case 3:
                 return (
                     <Button 
                         onClick={() => {
@@ -712,7 +734,7 @@ const EyeTestModal = ({ open, onClose }) => {
                     </Button>
                 );
 
-            case 4: // Examen en curso
+            case 4:
                 return (
                     <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <IconButton 
@@ -734,7 +756,7 @@ const EyeTestModal = ({ open, onClose }) => {
                     </Box>
                 );
 
-            case 5: // Formulario
+            case 5:
                 return (
                     <>
                         <Button onClick={handleReset} color="inherit">
@@ -750,7 +772,7 @@ const EyeTestModal = ({ open, onClose }) => {
                     </>
                 );
 
-            case 6: // Resultados
+            case 6:
                 return (
                     <Box sx={{ width: '100%', display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'space-between' }}>
                         <Button 
@@ -793,8 +815,8 @@ const EyeTestModal = ({ open, onClose }) => {
     return (
         <Dialog 
             open={open} 
-            onClose={step === 3 || step === 4 ? undefined : onClose} // Deshabilitar cierre accidental durante la prueba
-            maxWidth={step === 4 ? 'md' : 'md'} 
+            onClose={step === 3 || step === 4 ? undefined : onClose} 
+            maxWidth="md" 
             fullWidth
             scroll="paper"
             PaperProps={{
@@ -810,7 +832,6 @@ const EyeTestModal = ({ open, onClose }) => {
                     <Visibility sx={{ color: '#c4a043' }} />
                     Test de Agudeza Visual en Casa
                 </Typography>
-                {/* Ocultar botón de cerrar durante el test activo por seguridad */}
                 {step !== 3 && step !== 4 && (
                     <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
                         <Close />
