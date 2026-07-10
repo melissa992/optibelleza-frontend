@@ -44,7 +44,7 @@ const EyeTestSection = () => {
                         },
                     }}
                 >
-                    <Grid container alignItems="stretch">
+                    <Grid container alignItems="center">
                         {/* Text and Actions Content */}
                         <Grid item xs={12} md={7} sx={{ p: { xs: 4, md: 6 } }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -124,24 +124,34 @@ const EyeTestSection = () => {
                                     display: 'flex',
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    bgcolor: '#ffffff',
-                                    borderTopRightRadius: 16,
-                                    borderBottomRightRadius: 16,
-                                    p: 3,
-                                    overflow: 'hidden',
+                                    p: { xs: 4, md: 6 },
                                 }}
                             >
-                                <Box
-                                    component="img"
-                                    src={snellenImg}
-                                    alt="Tabla de Snellen"
+                                <Paper
+                                    elevation={6}
                                     sx={{
-                                        maxHeight: '320px',
-                                        maxWidth: '100%',
-                                        objectFit: 'contain',
-                                        borderRadius: 1,
+                                        bgcolor: '#ffffff',
+                                        borderRadius: 4,
+                                        p: 2.5,
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        maxHeight: '350px',
+                                        maxWidth: '240px',
+                                        boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
                                     }}
-                                />
+                                >
+                                    <Box
+                                        component="img"
+                                        src={snellenImg}
+                                        alt="Tabla de Snellen"
+                                        sx={{
+                                            maxHeight: '300px',
+                                            maxWidth: '100%',
+                                            objectFit: 'contain',
+                                        }}
+                                    />
+                                </Paper>
                             </Grid>
                         )}
                     </Grid>
