@@ -44,7 +44,7 @@ const EyeTestSection = () => {
                         },
                     }}
                 >
-                    <Grid container alignItems="center">
+                    <Grid container alignItems="stretch">
                         {/* Text and Actions Content */}
                         <Grid item xs={12} md={7} sx={{ p: { xs: 4, md: 6 } }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -121,20 +121,28 @@ const EyeTestSection = () => {
                                 xs={12}
                                 md={5}
                                 sx={{
-                                    height: '100%',
-                                    minHeight: '380px',
-                                    position: 'relative',
-                                    alignSelf: 'stretch',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
                                     bgcolor: '#ffffff',
-                                    backgroundImage: `url(${snellenImg})`,
-                                    backgroundSize: 'contain',
-                                    backgroundPosition: 'center',
-                                    backgroundRepeat: 'no-repeat',
                                     borderTopRightRadius: 16,
                                     borderBottomRightRadius: 16,
-                                    p: 2,
+                                    p: 3,
+                                    overflow: 'hidden',
                                 }}
-                            />
+                            >
+                                <Box
+                                    component="img"
+                                    src={snellenImg}
+                                    alt="Tabla de Snellen"
+                                    sx={{
+                                        maxHeight: '320px',
+                                        maxWidth: '100%',
+                                        objectFit: 'contain',
+                                        borderRadius: 1,
+                                    }}
+                                />
+                            </Grid>
                         )}
                     </Grid>
                 </Paper>
