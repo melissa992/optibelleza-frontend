@@ -15,7 +15,7 @@ import EyeTestModal from './EyeTestModal';
 
 const EyeTestSection = () => {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [modalOpen, setModalOpen] = useState(false);
 
     const handleOpenModal = () => {
@@ -46,7 +46,7 @@ const EyeTestSection = () => {
                 >
                     <Grid container alignItems="center">
                         {/* Text and Actions Content */}
-                        <Grid item xs={12} md={7} sx={{ p: { xs: 4, md: 6 } }}>
+                        <Grid item xs={12} sm={7} md={8} sx={{ p: { xs: 4, md: 6 } }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                                 <Visibility sx={{ color: theme.palette.primary.main, fontSize: 32 }} />
                                 <Typography
@@ -119,7 +119,8 @@ const EyeTestSection = () => {
                             <Grid
                                 item
                                 xs={12}
-                                md={5}
+                                sm={5}
+                                md={4}
                                 sx={{
                                     display: 'flex',
                                     justifyContent: 'center',
