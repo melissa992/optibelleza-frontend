@@ -71,9 +71,9 @@ const VISUAL_ACUITY_VALUES = [
     '20/20',
 ];
 
-// Tiempos progresivos por fila (1 letra = 12s, 2 = 15s, etc. hasta 8 = 33s)
-const ROW_TIMES = [12, 15, 18, 22, 25, 28, 30, 33];
-const TOTAL_TEST_TIME = 183; // Suma de todos los tiempos
+// Tiempos progresivos por fila (12, 14, 16, 18, 20, 22, 24, 26)
+const ROW_TIMES = [12, 14, 16, 18, 20, 22, 24, 26];
+const TOTAL_TEST_TIME = 152; // Suma de todos los tiempos
 
 const EyeTestModal = ({ open, onClose }) => {
     const navigate = useNavigate();
