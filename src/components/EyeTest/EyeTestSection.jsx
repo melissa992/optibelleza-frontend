@@ -10,7 +10,7 @@ import {
     useMediaQuery,
 } from '@mui/material';
 import { PlayArrow, Visibility } from '@mui/icons-material';
-import eyeTestBanner from '../../assets/eye-test-banner.png';
+import snellenImg from '../../assets/snellen.jpg';
 import EyeTestModal from './EyeTestModal';
 
 const EyeTestSection = () => {
@@ -125,20 +125,14 @@ const EyeTestSection = () => {
                                     minHeight: '380px',
                                     position: 'relative',
                                     alignSelf: 'stretch',
-                                    backgroundImage: `url(${eyeTestBanner})`,
-                                    backgroundSize: 'cover',
+                                    bgcolor: '#ffffff',
+                                    backgroundImage: `url(${snellenImg})`,
+                                    backgroundSize: 'contain',
                                     backgroundPosition: 'center',
+                                    backgroundRepeat: 'no-repeat',
                                     borderTopRightRadius: 16,
                                     borderBottomRightRadius: 16,
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        background: 'linear-gradient(to right, #1a1a1a 0%, transparent 100%)',
-                                    },
+                                    p: 2,
                                 }}
                             />
                         )}
