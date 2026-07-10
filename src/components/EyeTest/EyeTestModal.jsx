@@ -526,8 +526,6 @@ const EyeTestModal = ({ open, onClose }) => {
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 justifyContent: 'center', 
-                                letterSpacing: '0.8em',
-                                pl: '0.8em',
                                 userSelect: 'none',
                             }}
                         >
@@ -538,6 +536,8 @@ const EyeTestModal = ({ open, onClose }) => {
                                     fontSize: `${fontSize}rem`,
                                     color: 'black',
                                     transition: 'font-size 0.3s ease',
+                                    letterSpacing: '1.2rem',
+                                    pl: '1.2rem',
                                 }}
                             >
                                 {currentLetters}
