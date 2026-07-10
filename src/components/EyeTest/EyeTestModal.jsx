@@ -45,7 +45,6 @@ import { useNavigate } from 'react-router-dom';
 const SNELLEN_LETTERS = ['C', 'D', 'E', 'F', 'L', 'O', 'P', 'T', 'Z'];
 
 // Tamaños base de las letras en rem (escala decreciente de Fila 1 a Fila 8)
-// Progresión crítica ajustada ópticamente
 const BASE_FONT_SIZES = [
     6.0,  // Fila 1 (20/200)
     4.2,  // Fila 2 (20/100)
@@ -140,7 +139,7 @@ const EyeTestModal = ({ open, onClose }) => {
     const speak = (text) => {
         if (muted || !synthRef.current) return;
         
-        synthRef.current.cancel(); // Cancelar voces anteriores
+        synthRef.current.cancel(); // Cancelar voces anteriores para evitar encolamiento
         
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'es-ES';
@@ -165,8 +164,6 @@ const EyeTestModal = ({ open, onClose }) => {
                     if (prev <= 1) {
                         clearInterval(timerRef.current);
                         setStep(4); // Avanzar a examen
-                        setCurrentRowIndex(0);
-                        setRowCountdown(12); // Fila 1 = 12s
                         return 15;
                     }
                     
@@ -183,76 +180,74 @@ const EyeTestModal = ({ open, onClose }) => {
         };
     }, [step]);
 
-    // Efecto que controla la ejecución de las filas en curso (Paso 4)
+    // Efecto de control de tiempo único del examen en curso (Paso 4)
+    // Se ejecuta una sola vez al entrar al paso 4 para evitar recreaciones y desajustes de intervalos
     useEffect(() => {
         if (step === 4) {
+            setCurrentRowIndex(0);
+            setRowCountdown(12);
+
             const speakCurrentRow = (index) => {
                 if (index === 0) {
-                    speak("Comenzamos el examen. Fila número 1. Por favor, anota en tu papel, celular o dispositivo las letras que ves en pantalla.");
+                    speak("Comenzamos el examen. Fila número 1. Por favor, anota en tu papel o dispositivo las letras que ves en pantalla.");
                 } else {
                     speak(`Cambiando a la fila número ${index + 1}. Anota las letras de la fila ${index + 1}.`);
                 }
             };
 
-            speakCurrentRow(currentRowIndex);
+            speakCurrentRow(0);
+
+            let localRowIndex = 0;
+            let localCountdown = 12;
 
             timerRef.current = setInterval(() => {
-                setRowCountdown((prev) => {
-                    if (prev <= 1) {
-                        let isFinished = false;
-                        let nextRowVal = 0;
-                        
-                        setCurrentRowIndex((prevRow) => {
-                            const nextRow = prevRow + 1;
-                            if (nextRow < 8) {
-                                nextRowVal = nextRow;
-                                return nextRow;
-                            } else {
-                                isFinished = true;
-                                return prevRow;
-                            }
-                        });
+                localCountdown--;
+                setRowCountdown(localCountdown);
 
-                        if (isFinished) {
-                            clearInterval(timerRef.current);
-                            speak("Examen finalizado. Por favor, regresa al dispositivo e ingresa en cada casilla las respuestas que anotaste.");
-                            setStep(5); // Avanzar al formulario
-                            return 0;
-                        } else {
-                            speakCurrentRow(nextRowVal);
-                            return ROW_TIMES[nextRowVal];
-                        }
+                if (localCountdown <= 0) {
+                    localRowIndex++;
+                    if (localRowIndex < 8) {
+                        setCurrentRowIndex(localRowIndex);
+                        const nextTime = ROW_TIMES[localRowIndex];
+                        localCountdown = nextTime;
+                        setRowCountdown(nextTime);
+                        speakCurrentRow(localRowIndex);
+                    } else {
+                        clearInterval(timerRef.current);
+                        speak("Examen finalizado. Por favor, regresa al dispositivo e ingresa en cada casilla las respuestas que anotaste.");
+                        setStep(5); // Avanzar al formulario
                     }
-                    return prev - 1;
-                });
+                }
             }, 1000);
         }
 
         return () => {
-            if (timerRef.current && step === 4) clearInterval(timerRef.current);
+            if (timerRef.current && step === 4) {
+                clearInterval(timerRef.current);
+            }
         };
-    }, [step, currentRowIndex]);
+    }, [step]);
 
     // Multiplicador de escala de tamaño según dispositivo (Verificación crítica de distancias y tamaños)
     const getDeviceScale = () => {
         switch (device) {
             case 'mobile': return 0.8;    // Pantalla pequeña a 1 metro
-            case 'tablet': return 0.95;   // Pantalla mediana a 1.5 metros
-            case 'tv': return 1.6;        // Pantalla grande a 3 metros
+            case 'tablet': return 0.95;   // Pantalla mediana a 1.2 metros
+            case 'tv': return 1.6;        // Pantalla grande a 2.5 metros
             case 'computer':
             default:
-                return 1.0;               // Pantalla estándar a 2 metros
+                return 1.0;               // Pantalla estándar a 1.5 metros
         }
     };
 
     const getDistanceLabel = () => {
         switch (device) {
             case 'mobile': return '1 metro (3 pies)';
-            case 'tablet': return '1.5 metros (5 pies)';
-            case 'tv': return '3 metros (10 pies)';
+            case 'tablet': return '1.2 metros (4 pies)';
+            case 'tv': return '2.5 metros (8 pies)';
             case 'computer':
             default:
-                return '2 metros (6.5 pies)';
+                return '1.5 metros (5 pies)';
         }
     };
 
@@ -505,7 +500,6 @@ const EyeTestModal = ({ open, onClose }) => {
                 const scale = getDeviceScale();
                 const fontSize = BASE_FONT_SIZES[currentRowIndex] * scale;
                 const currentLetters = testLetters[currentRowIndex] || '';
-                const maxRowTime = ROW_TIMES[currentRowIndex];
 
                 return (
                     <Box sx={{ py: 4, textAlign: 'center', bgcolor: 'white', borderRadius: 2, border: '1px solid #eee', position: 'relative' }}>
