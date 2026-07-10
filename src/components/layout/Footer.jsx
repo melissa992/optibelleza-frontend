@@ -2,6 +2,8 @@ import React from 'react';
 import { Box, Container, Typography, Link, Grid } from '@mui/material';
 import { Visibility, Email, Phone, LocationOn } from '@mui/icons-material';
 
+import logoImg from '../../assets/logo.png';
+
 const Footer = () => {
     return (
         <Box
@@ -18,9 +20,17 @@ const Footer = () => {
                     {/* Brand */}
                     <Grid item xs={12} md={4}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <Visibility sx={{ mr: 1, fontSize: 32, color: '#c4a043' }} />
+                            <Box
+                                component="img"
+                                src={logoImg}
+                                alt="OptiTech Logo"
+                                sx={{
+                                    height: 32,
+                                    mr: 1.5,
+                                }}
+                            />
                             <Typography variant="h6" sx={{ fontWeight: 700, color: '#c4a043' }}>
-                                OptiBelleza
+                                OptiTech
                             </Typography>
                         </Box>
                         <Typography variant="body2" sx={{ color: '#BDBDBD' }}>
@@ -56,7 +66,7 @@ const Footer = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Email sx={{ fontSize: 18, color: '#c4a043' }} />
                                 <Typography variant="body2" sx={{ color: '#BDBDBD' }}>
-                                    info@optibelleza.com
+                                    info@optitech.com
                                 </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -78,7 +88,7 @@ const Footer = () => {
                 {/* Copyright */}
                 <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid #424242', textAlign: 'center' }}>
                     <Typography variant="body2" sx={{ color: '#BDBDBD' }}>
-                        © {new Date().getFullYear()} OptiBelleza. Todos los derechos reservados.
+                        © {new Date().getFullYear()} OptiTech. Todos los derechos reservados.
                     </Typography>
                 </Box>
             </Container>

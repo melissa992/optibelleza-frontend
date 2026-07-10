@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import logoImg from '../../assets/logo.png';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -34,7 +35,17 @@ const Header = () => {
             <Container maxWidth="xl">
                 <Toolbar disableGutters>
                     {/* Logo */}
-                    <Visibility sx={{ mr: 1, fontSize: 32, color: '#c4a043' }} />
+                    <Box
+                        component="img"
+                        src={logoImg}
+                        alt="OptiTech Logo"
+                        sx={{
+                            height: 38,
+                            mr: 1.5,
+                            cursor: 'pointer',
+                        }}
+                        onClick={() => navigate('/')}
+                    />
                     <Typography
                         variant="h5"
                         component="div"
@@ -46,7 +57,7 @@ const Header = () => {
                         }}
                         onClick={() => navigate('/')}
                     >
-                        OptiBelleza
+                        OptiTech
                     </Typography>
 
                     {/* Navigation */}

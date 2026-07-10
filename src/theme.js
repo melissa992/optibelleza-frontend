@@ -1,6 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 
-// OptiBelleza Color Palette: Yellow, Black, White
+// OptiTech Color Palette: Yellow, Black, White
 const theme = createTheme({
     palette: {
         mode: 'light',

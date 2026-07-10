@@ -12,6 +12,7 @@ import {
 import { Visibility } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import logoImg from '../assets/logo.png';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -66,9 +67,18 @@ const Login = () => {
                 >
                     {/* Logo */}
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
-                        <Visibility sx={{ fontSize: 60, color: '#c4a043' }} />
+                        <Box
+                            component="img"
+                            src={logoImg}
+                            alt="OptiTech Logo"
+                            sx={{
+                                height: 60,
+                                mb: 1,
+                                mx: 'auto',
+                            }}
+                        />
                         <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>
-                            OptiBelleza
+                            OptiTech
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                             Inicia sesión en tu cuenta
